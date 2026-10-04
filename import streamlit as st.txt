@@ -1,0 +1,352 @@
+import streamlit as st
+import random
+
+# --------------------------------------------------
+# PAGE CONFIGURATION
+# --------------------------------------------------
+st.set_page_config(
+    page_title="Math Challenge - Grade 5",
+    page_icon="🧮",
+    layout="centered"
+)
+
+# --------------------------------------------------
+# CUSTOM CSS
+# --------------------------------------------------
+st.markdown("""
+<style>
+    .main-title {
+        text-align: center;
+        font-size: 42px;
+        font-weight: bold;
+    }
+
+    .subtitle {
+        text-align: center;
+        font-size: 20px;
+    }
+
+    .score-box {
+        padding: 15px;
+        border-radius: 15px;
+        text-align: center;
+        background-color: #f0f2f6;
+        font-size: 22px;
+        font-weight: bold;
+    }
+
+    .question-box {
+        padding: 20px;
+        border-radius: 15px;
+        background-color: #fff3cd;
+        text-align: center;
+        font-size: 30px;
+        font-weight: bold;
+    }
+
+    .correct {
+        color: green;
+        font-size: 22px;
+        font-weight: bold;
+    }
+
+    .wrong {
+        color: red;
+        font-size: 22px;
+        font-weight: bold;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+
+# --------------------------------------------------
+# GAME FUNCTIONS
+# --------------------------------------------------
+def generate_question():
+    operation = random.choice(["+", "-", "×", "÷"])
+
+    if operation == "+":
+        a = random.randint(10, 999)
+        b = random.randint(10, 999)
+        answer = a + b
+
+    elif operation == "-":
+        a = random.randint(100, 999)
+        b = random.randint(10, a)
+        answer = a - b
+
+    elif operation == "×":
+        a = random.randint(2, 25)
+        b = random.randint(2, 20)
+        answer = a * b
+
+    else:
+        b = random.randint(2, 20)
+        answer = random.randint(2, 50)
+        a = b * answer
+
+    return a, operation, b, answer
+
+
+def start_game():
+    st.session_state.game_started = True
+    st.session_state.question_number = 1
+    st.session_state.score = 0
+    st.session_state.questions = []
+    st.session_state.answered = False
+    st.session_state.last_result = ""
+    st.session_state.finished = False
+
+    # Generate 10 questions
+    for _ in range(10):
+        st.session_state.questions.append(generate_question())
+
+
+def reset_game():
+    for key in list(st.session_state.keys()):
+        del st.session_state[key]
+
+
+# --------------------------------------------------
+# INITIALIZE SESSION STATE
+# --------------------------------------------------
+if "game_started" not in st.session_state:
+    st.session_state.game_started = False
+
+if "finished" not in st.session_state:
+    st.session_state.finished = False
+
+
+# --------------------------------------------------
+# TITLE
+# --------------------------------------------------
+st.markdown(
+    '<div class="main-title">🧮 Math Challenge Quest</div>',
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    '<div class="subtitle">🎯 Grade 5 Basic Operations Game</div>',
+    unsafe_allow_html=True
+)
+
+st.write("")
+
+
+# --------------------------------------------------
+# START SCREEN
+# --------------------------------------------------
+if not st.session_state.game_started:
+
+    st.info("""
+    **Welcome to Math Challenge Quest! 🎮**
+
+    Test your Grade 5 mathematics skills with:
+
+    ➕ Addition  
+    ➖ Subtraction  
+    ✖️ Multiplication  
+    ➗ Division  
+
+    You will answer **10 questions**.
+    """)
+
+    st.markdown("### 🏆 Scoring System")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.write("🥉")
+        st.write("Correct = **10 points**")
+
+    with col2:
+        st.write("⭐")
+        st.write("Maximum = **100 points**")
+
+    with col3:
+        st.write("🎖️")
+        st.write("10 Questions")
+
+    st.write("")
+
+    if st.button("🚀 START GAME", use_container_width=True):
+        start_game()
+        st.rerun()
+
+
+# --------------------------------------------------
+# GAME SCREEN
+# --------------------------------------------------
+elif not st.session_state.finished:
+
+    question_number = st.session_state.question_number
+    score = st.session_state.score
+
+    # Score information
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown(
+            f'<div class="score-box">🏆 Score: {score}</div>',
+            unsafe_allow_html=True
+        )
+
+    with col2:
+        st.markdown(
+            f'<div class="score-box">📌 Question: {question_number}/10</div>',
+            unsafe_allow_html=True
+        )
+
+    st.write("")
+
+    # Progress bar
+    progress = question_number / 10
+    st.progress(progress)
+
+    # Current question
+    a, operation, b, correct_answer = st.session_state.questions[
+        question_number - 1
+    ]
+
+    st.markdown(
+        f'<div class="question-box">{a} {operation} {b} = ?</div>',
+        unsafe_allow_html=True
+    )
+
+    st.write("")
+
+    # --------------------------------------------------
+    # ANSWER
+    # --------------------------------------------------
+
+    if not st.session_state.answered:
+
+        user_answer = st.number_input(
+            "✏️ Enter your answer:",
+            min_value=0,
+            step=1,
+            key=f"answer_{question_number}"
+        )
+
+        if st.button(
+            "✅ CHECK ANSWER",
+            use_container_width=True
+        ):
+
+            if user_answer == correct_answer:
+
+                st.session_state.score += 10
+                st.session_state.last_result = (
+                    f"🎉 Excellent! {correct_answer} is correct!"
+                )
+
+            else:
+
+                st.session_state.last_result = (
+                    f"❌ Not quite! The correct answer is {correct_answer}."
+                )
+
+            st.session_state.answered = True
+            st.rerun()
+
+    # --------------------------------------------------
+    # FEEDBACK
+    # --------------------------------------------------
+
+    else:
+
+        if "🎉" in st.session_state.last_result:
+            st.success(st.session_state.last_result)
+        else:
+            st.error(st.session_state.last_result)
+
+        st.write("")
+
+        if question_number < 10:
+
+            if st.button(
+                "➡️ NEXT QUESTION",
+                use_container_width=True
+            ):
+
+                st.session_state.question_number += 1
+                st.session_state.answered = False
+                st.session_state.last_result = ""
+                st.rerun()
+
+        else:
+
+            if st.button(
+                "🏁 FINISH GAME",
+                use_container_width=True
+            ):
+
+                st.session_state.finished = True
+                st.rerun()
+
+
+# --------------------------------------------------
+# FINAL RESULT
+# --------------------------------------------------
+else:
+
+    score = st.session_state.score
+
+    st.markdown("## 🎉 GAME COMPLETE! 🎉")
+
+    st.markdown(
+        f'<div class="score-box">🏆 Your Score: {score}/100</div>',
+        unsafe_allow_html=True
+    )
+
+    st.write("")
+
+    # Badge system
+    if score == 100:
+        badge = "🥇 GOLD MATH MASTER"
+        message = "Amazing! You answered every question correctly!"
+
+    elif score >= 80:
+        badge = "🥈 SILVER MATH STAR"
+        message = "Excellent work! You have strong math skills."
+
+    elif score >= 60:
+        badge = "🥉 BRONZE MATH HERO"
+        message = "Good job! Keep practicing to become a Math Master."
+
+    elif score >= 40:
+        badge = "⭐ MATH EXPLORER"
+        message = "Nice effort! Practice the operations again."
+
+    else:
+        badge = "🌱 MATH BEGINNER"
+        message = "Keep practicing. Every mistake helps you learn!"
+
+    st.markdown(f"## {badge}")
+
+    st.info(message)
+
+    st.write("### 📊 Performance")
+
+    if score >= 80:
+        st.success("🌟 Excellent performance!")
+    elif score >= 60:
+        st.warning("👍 Good performance. Keep practicing!")
+    else:
+        st.error("💪 Don't give up! Practice makes progress.")
+
+    st.write("")
+
+    if st.button(
+        "🔄 PLAY AGAIN",
+        use_container_width=True
+    ):
+        reset_game()
+        st.rerun()
+
+    st.write("")
+
+    st.caption(
+        "🧮 Math Challenge Quest | Grade 5 | "
+        "Addition • Subtraction • Multiplication • Division"
+    )
